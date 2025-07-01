@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react"; // Optional icon if using lucide-react
 import axiosInstance from "../../utils/axios";
 
+
 const AdminLogin = ({ setIsAdmin }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -23,6 +24,7 @@ const AdminLogin = ({ setIsAdmin }) => {
         setError(res.error);
         setIsAdmin(false);
       } else {
+        localStorage.setItem("token", res.data.token);
         setIsAdmin(true);
         navigate("/admin/home");
       }

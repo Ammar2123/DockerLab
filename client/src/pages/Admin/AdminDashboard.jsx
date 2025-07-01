@@ -37,11 +37,12 @@ const AdminDashboard = () => {
     };
 
     try {
+      const token = localStorage.getItem("token");
       if (editId) {
-        await axiosInstance.put(`/api/labs/${editId}`, payload);
+        await axiosInstance.put(`/api/labs/${editId}`, {payload, token});
         setEditId(null);
       } else {
-        await axiosInstance.post("/api/labs", payload);
+        await axiosInstance.post("/api/labs", {payload, token});
       }
       fetchImages();
       resetForm();
@@ -67,7 +68,8 @@ const AdminDashboard = () => {
 
   const handleDelete = async (id) => {
     try {
-      await axiosInstance.delete(`/api/labs/${id}`);
+      const token = localStorage.getItem("token");
+      await axiosInstance.post(`/api/labs/${id}`, {token});
       fetchImages();
     } catch (error) {
       console.error("Error deleting image:", error);

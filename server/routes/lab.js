@@ -43,7 +43,7 @@ router.get("/search/:query", async (req, res) => {
 // Add Lab (admin)
 router.post("/", isAdmin, async (req, res) => {
   console.log(req.body)
-  const { name, semester, description, dockerImage, commands } = req.body;
+  const { name, semester, description, dockerImage, commands } = req.body.payload;
   const encCmds = {};
   ["ubuntu", "windows"].forEach((os) => {
     encCmds[os] = { pull: [], run: [] };
@@ -100,7 +100,7 @@ router.get("/:id", async (req, res) => {
 
 //edit
 router.put("/:id", isAdmin, async (req, res) => {
-  const { name, semesterId, description, dockerImage, commands } = req.body;
+  const { name, semesterId, description, dockerImage, commands } = req.body.payload;
   const encCmds = {};
   ["ubuntu", "windows"].forEach((os) => {
     encCmds[os] = { pull: [], run: [] };

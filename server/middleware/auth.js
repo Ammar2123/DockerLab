@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 function isAdmin(req, res, next) {
-  const token = req.cookies.token;
+  const token = req.body.token
   if (!token) return res.status(403).json({ error: 'No token provided' });
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
