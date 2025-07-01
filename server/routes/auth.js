@@ -10,18 +10,18 @@ router.post('/login', async (req, res) => {
     const admin = await Admin.findOne({ username });
     
     if (!admin) {
-      return res.status(401).json({ error: 'Invalid credentials - username' });
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const passwordMatch = await bcrypt.compare(password, admin.password);
     if (!passwordMatch) {
-      return res.status(401).json({ error: 'Invalid credentials - password' });
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRET, { expiresIn: '2h' });
     res.cookie('token', token, {
       httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
+      secure: false,
       sameSite: 'strict',
       maxAge: 24 * 60 * 60 * 1000 // 24 hours
     });
