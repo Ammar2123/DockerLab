@@ -1,5 +1,5 @@
 import {
-  BrowserRouter as Router,
+  HashRouter as Router,
   Routes,
   Route,
   Navigate,
@@ -18,7 +18,7 @@ import Semesters from "./pages/Semesters";
 import SemesterImages from "./pages/SemesterImages";
 
 function App() {
-  const [isAdmin, setIsAdmin] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     function getCookie(name) {
@@ -69,6 +69,9 @@ function App() {
           path="/admin/docs"
           element={<PrivateRoute element={<AdminDocs />} />}
         />
+
+        {/* Fallback for unmatched routes */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );

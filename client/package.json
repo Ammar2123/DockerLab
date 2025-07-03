@@ -1,19 +1,25 @@
 {
   "main": "main.cjs",
-  "name": "frontend",
+  "name": "dockerhub",
+  "description": "Electron desktop app to run Docker lab environments",
   "private": true,
-  "version": "0.0.0",
+  "author": {
+    "name": "Ammar",
+    "email": "ammar@nagarji.in"
+  },
+  "homepage": "https://github.com/ammar2123/dockerhub",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dist": "vite build && electron-builder --linux"
   },
   "dependencies": {
     "@rollup/rollup-linux-x64-gnu": "^4.44.1",
     "axios": "^1.8.4",
-    "electron": "^35.1.4",
     "fastq": "^1.19.1",
     "js-cookie": "^3.0.5",
     "lucide-react": "^0.487.0",
@@ -25,9 +31,13 @@
     "@eslint/js": "^9.21.0",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
+    "electron": "^35.1.4",
+    "electron-builder": "^26.0.12",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.21",
     "concurrently": "^9.1.2",
+    "electron-installer-debian": "^3.2.0",
+    "electron-packager": "^17.1.2",
     "eslint": "^9.21.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.19",
@@ -36,5 +46,26 @@
     "tailwindcss": "^3.4.1",
     "vite": "^6.2.0",
     "wait-on": "^8.0.3"
+  },
+  "build": {
+    "appId": "apsithub.apsit.edu.in",
+    "productName": "Dockerhub",
+    "directories": {
+      "buildResources": "assets"
+    },
+    "files": [
+      "dist/**/*",
+      "main.cjs",
+      "preload.cjs",
+      "scripts/**/*"
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "public/vite.svg",
+      "category": "Utility"
+    }
   }
 }

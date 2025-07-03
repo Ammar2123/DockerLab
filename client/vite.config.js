@@ -4,6 +4,7 @@ import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
+   base: './', 
   resolve: {
     alias: {
       '@': path.resolve('./src'),
@@ -11,6 +12,7 @@ export default defineConfig({
   },build: {
     outDir: 'dist',
     target: 'chrome105', // or latest Electron-compatible target
+    emptyOutDir: true, // Clear the output directory before building
   },
   server: {
     port: 5173,

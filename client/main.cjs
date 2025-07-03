@@ -15,8 +15,11 @@ function createWindow() {
     },
   });
 
-  win.loadURL('http://localhost:5173');
-  win.webContents.openDevTools();
+  const indexPath = path.join(__dirname, 'dist', 'index.html');
+  console.log('Trying to load:', indexPath);
+
+  win.loadFile(indexPath); // Correctly reference 'win'
+  // win.webContents.openDevTools();
 }
 
 app.whenReady().then(createWindow);
