@@ -59,6 +59,16 @@
       "preload.cjs",
       "scripts/**/*"
     ],
+    "extraResources": [
+      {
+        "from": "python/",
+        "to": "python"
+      }
+    ],
+    "asarUnpack": [
+      "python/**",
+      "scripts/**"
+    ],
     "linux": {
       "target": [
         "AppImage",

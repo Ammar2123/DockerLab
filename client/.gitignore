@@ -25,3 +25,6 @@ dist-ssr
 
 release-build
 release-build-ssr
+
+python
+pythonmini.sh
