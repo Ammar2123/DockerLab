@@ -1,11 +1,26 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  runDockerCommand: (os, cmd) => {
-    console.log("🔌 Preload sending command:", os, cmd);
-    return ipcRenderer.invoke('run-docker-command', { 
-      os: os.toString().trim(), 
-      cmd: cmd.toString().trim() 
-    });
+  // Run Docker commands
+  runDockerCommand: async (os, command) => {
+    try {
+      return await ipcRenderer.invoke('run-docker-command', os, command);
+    } catch (error) {
+      console.error('Failed to run Docker command:', error);
+      throw error;
+    }
   },
+  
+  // Theme control
+  setTheme: (theme) => {
+    ipcRenderer.send('set-theme', theme);
+  },
+  
+  // Get current theme from electron
+  getTheme: async () => {
+    return await ipcRenderer.invoke('get-theme');
+  },
+  
+  // Identify that we're running in Electron
+  isElectron: true
 });

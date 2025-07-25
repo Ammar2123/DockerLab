@@ -97,7 +97,6 @@ const LabCard = ({ image }) => {
                 if (window.electronAPI?.runDockerCommand) {
                   // Pass both the OS and the command to the function
                   window.electronAPI.runDockerCommand(osTab, command);
-                  console.log(`Running command on ${osTab}: ${command}`);
                 } else {
                   alert('❌ Electron API not available.');
                 }

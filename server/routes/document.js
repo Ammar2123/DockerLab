@@ -1,49 +1,96 @@
 const express = require("express");
 const router = express.Router();
+const multer = require("multer");
 const Document = require("../models/Document");
 const { isAdmin } = require("../middleware/auth");
-const multer = require("multer");
-const path = require("path");
 const fs = require("fs");
+const path = require("path");
+const mongoose = require('mongoose');
 
-// Ensure uploads folder exists
-const uploadDir = path.join(__dirname, "..", "uploads");
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Multer configuration
+// Update this storage configuration to ensure proper directory exists
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) =>
-    cb(null, Date.now() + "-" + file.originalname.replace(/\s+/g, "_")),
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(__dirname, "../uploads");
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + "-" + file.originalname);
+  },
 });
-const upload = multer({ storage });
 
-// ✅ Upload document (admin)
+const upload = multer({ storage: storage });
+
+// Updated document upload route to match Document schema
 router.post("/", isAdmin, upload.single("file"), async (req, res) => {
-  console.log(req)
   try {
-    // Ensure file was uploaded
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    const { title, semesterId, labId } = req.body;
-    const fileType = req.file.mimetype.includes("pdf") ? "pdf" : "image";
+    // Extract fields that match the Document schema
+    const { title, semesterId, labId, fileType } = req.body;
+    
+    // Only validate title as required
+    if (!title) {
+      // Delete the file if metadata is missing
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({ error: "Document title is required" });
+    }
 
-    const doc = await Document.create({
+    // Only validate labId format if it's provided
+    if (labId && !mongoose.Types.ObjectId.isValid(labId)) {
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({ error: "Invalid labId format" });
+    }
+
+    // Generate fileUrl from the uploaded file
+    const fileUrl = `/uploads/${req.file.filename}`;
+    
+    // Determine fileType if not provided
+    let documentFileType = fileType;
+    if (!documentFileType) {
+      const extension = path.extname(req.file.originalname).toLowerCase();
+      documentFileType = ['.jpg', '.jpeg', '.png', '.gif'].includes(extension) ? 'image' : 'pdf';
+    }
+
+    // Create document object with only the required fields
+    const documentData = {
       title,
-      fileUrl: "/uploads/" + req.file.filename,
-      fileType,
-      semesterId,
-      labId,
-    });
+      fileUrl,
+      fileType: documentFileType,
+    };
 
-    res.json(doc);
-  } catch (err) {
-    console.error("Upload Error:", err);
-    res.status(500).json({ error: "Something went wrong while uploading" });
+    // Only add optional fields if they're provided
+    if (labId) {
+      documentData.labId = labId;
+    }
+    
+    if (semesterId) {
+      // Handle hardcoded semesters
+      documentData.semesterId = semesterId.startsWith("Sem ") ? 
+        (labId || semesterId) : semesterId;
+    }
+
+    // Create the document with correct schema fields
+    const document = new Document(documentData);
+
+    await document.save();
+    res.status(201).json(document);
+  } catch (error) {
+    console.error("Document upload error:", error);
+    // Clean up file if there was an error
+    if (req.file) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (unlinkError) {
+        console.error("Error deleting file:", unlinkError);
+      }
+    }
+    res.status(500).json({ error: error.message || "Server error" });
   }
 });
 

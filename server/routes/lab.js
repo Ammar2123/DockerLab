@@ -42,8 +42,7 @@ router.get("/search/:query", async (req, res) => {
 // CRUD (admin)
 // Add Lab (admin)
 router.post("/", isAdmin, async (req, res) => {
-  console.log(req.body)
-  const { name, semester, description, dockerImage, commands } = req.body.payload;
+  const { name, semester, description, dockerImage, commands } = req.body; // Use 'semester'
   const encCmds = {};
   ["ubuntu", "windows"].forEach((os) => {
     encCmds[os] = { pull: [], run: [] };
@@ -53,7 +52,7 @@ router.post("/", isAdmin, async (req, res) => {
   });
   const lab = await Lab.create({
     name,
-    semester,
+    semester, // Use 'semester'
     description,
     dockerImage,
     commands: encCmds,
@@ -100,7 +99,7 @@ router.get("/:id", async (req, res) => {
 
 //edit
 router.put("/:id", isAdmin, async (req, res) => {
-  const { name, semesterId, description, dockerImage, commands } = req.body.payload;
+  const { name, semester, description, dockerImage, commands } = req.body;
   const encCmds = {};
   ["ubuntu", "windows"].forEach((os) => {
     encCmds[os] = { pull: [], run: [] };
@@ -110,7 +109,7 @@ router.put("/:id", isAdmin, async (req, res) => {
   });
   const lab = await Lab.findByIdAndUpdate(
     req.params.id,
-    { name, semesterId, description, dockerImage, commands: encCmds },
+    { name, semester, description, dockerImage, commands: encCmds },
     { new: true }
   );
   res.json(lab);

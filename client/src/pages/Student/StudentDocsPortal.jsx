@@ -1,83 +1,164 @@
-import React, { useEffect, useState } from "react";
-import axiosInstance from "../../utils/axios";
+import React, { useState, useEffect } from "react";
+import axios from "../../utils/axios";
 import Navbar from "../../components/Navbar";
+import { useTheme } from "../../context/ThemeContext";
+import { FileText, Search, AlertCircle, Loader } from "lucide-react";
+
 const StudentDocsPortal = () => {
+  const { darkMode } = useTheme();
   const [documents, setDocuments] = useState([]);
-  const [selectedDocId, setSelectedDocId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Get API base URL from your axios configuration or environment
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   useEffect(() => {
-    axiosInstance.get("/api/documents").then((res) => {
-      setDocuments(res.data);
-      if (res.data.length > 0) setSelectedDocId(res.data[0]._id); // select first doc by default
-    });
+    fetchDocuments();
   }, []);
 
-  const selectedDoc = documents.find((doc) => doc._id === selectedDocId);
+  const fetchDocuments = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get("/api/documents");
+      setDocuments(response.data);
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching documents:", err);
+      setError("Failed to load documents. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get the full document URL
+  const getDocumentUrl = (fileUrl) => {
+    // If fileUrl already starts with http, it's already a full URL
+    if (fileUrl && (fileUrl.startsWith('http://') || fileUrl.startsWith('https://'))) {
+      return fileUrl;
+    }
+    
+    // Make sure fileUrl starts with a slash
+    const formattedPath = fileUrl && !fileUrl.startsWith('/') ? `/${fileUrl}` : fileUrl;
+    
+    // Construct the full URL
+    return `${API_BASE_URL}${formattedPath}`;
+  };
+
+  // Safe filter function to handle undefined values
+  const filteredDocuments = documents.filter((doc) => {
+    // Add null/undefined checks before calling toLowerCase()
+    const docTitle = doc.title ? doc.title.toLowerCase() : '';
+    const searchTermLower = searchTerm.toLowerCase();
+    
+    return docTitle.includes(searchTermLower);
+  });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
-      <Navbar isAdmin={false} />
+    <div className={`min-h-screen flex flex-col ${darkMode ? 'bg-surface-900 text-surface-100' : 'bg-surface-50 text-surface-900'}`}>
+      <Navbar />
 
-      <div className="flex">
-        {/* Sidebar */}
-        <aside className="w-64 h-screen overflow-y-auto bg-white shadow-md border-r p-4 sticky top-0">
-          <h2 className="text-xl font-semibold mb-4">Documentation</h2>
-          <ul className="space-y-2">
-            {documents.map((doc) => (
-              <li
-                key={doc._id}
-                onClick={() => setSelectedDocId(doc._id)}
-                className={`cursor-pointer p-2 rounded hover:bg-blue-100 ${
-                  selectedDocId === doc._id ? "bg-blue-200 font-medium" : ""
-                }`}
+      <div className="max-w-6xl mx-auto px-4 py-8 w-full flex-grow">
+        <h1 className={`text-3xl font-bold ${darkMode ? 'text-primary-400' : 'text-primary-700'} mb-6`}>
+          Laboratory Documents
+        </h1>
+
+        <div className="relative mb-6">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search size={20} className={darkMode ? 'text-surface-500' : 'text-surface-400'} />
+          </div>
+          <input
+            type="text"
+            className={`block w-full pl-10 pr-3 py-2 rounded-lg
+              ${darkMode 
+                ? 'bg-surface-800 border-surface-700 text-surface-100 placeholder-surface-500' 
+                : 'bg-white border-surface-300 text-surface-900 placeholder-surface-400'} 
+              focus:outline-none focus:ring-2 focus:ring-primary-500`}
+            placeholder="Search documents..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <Loader className={`h-10 w-10 animate-spin ${darkMode ? 'text-primary-400' : 'text-primary-600'}`} />
+          </div>
+        ) : error ? (
+          <div className={`p-4 rounded-lg ${darkMode ? 'bg-red-900/20 text-red-300' : 'bg-red-100 text-red-800'} flex items-center`}>
+            <AlertCircle className="mr-2" />
+            <span>{error}</span>
+          </div>
+        ) : filteredDocuments.length === 0 ? (
+          <div className={`text-center py-16 ${darkMode ? 'text-surface-400' : 'text-surface-500'}`}>
+            {searchTerm 
+              ? "No documents matching your search criteria" 
+              : "No documents available"}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredDocuments.map((doc) => (
+              <div 
+                key={doc._id} 
+                className={`rounded-lg overflow-hidden shadow-lg transition-transform hover:scale-105 hover:shadow-xl 
+                  ${darkMode ? 'bg-surface-800' : 'bg-white'}`}
               >
-                {doc.contentBlocks.find((b) => b.type === "heading")?.value ||
-                  "Untitled"}
-              </li>
-            ))}
-          </ul>
-        </aside>
-
-        {/* Main Content */}
-        <main className="flex-1 p-8 overflow-y-auto">
-          {selectedDoc ? (
-            <div className="bg-white p-6 rounded shadow">
-              {selectedDoc.contentBlocks.map((f, i) => (
-                <div key={i} className="mb-4">
-                  {f.type === "heading" && (
-                    <h2 className="text-2xl font-bold border-b pb-2 mb-2">
-                      {f.value}
-                    </h2>
-                  )}
-                  {f.type === "content" && (
-                    <p className="text-gray-700">{f.value}</p>
-                  )}
-                  {f.type === "command" && (
-                    <div className="bg-gray-100 p-3 rounded flex justify-between items-center">
-                      <code className="text-sm">{f.value}</code>
-                      <button
-                        onClick={() => navigator.clipboard.writeText(f.value)}
-                        className="ml-4 px-2 py-1 text-sm bg-gray-300 rounded hover:bg-gray-400"
-                      >
-                        Copy
-                      </button>
+                <div className={`p-5`}>
+                  <div className="flex items-start space-x-3">
+                    <div className={`p-2 rounded-md ${darkMode ? 'bg-primary-900/30 text-primary-400' : 'bg-primary-100 text-primary-600'}`}>
+                      <FileText size={20} />
                     </div>
-                  )}
-                  {f.type === "image" && (
-                    <img
-                      src={f.value}
-                      alt="Document"
-                      className="mt-2 max-w-md rounded border"
-                    />
-                  )}
+                    <div>
+                      <h3 className={`font-medium ${darkMode ? 'text-surface-100' : 'text-surface-800'} mb-1`}>
+                        {doc.title}
+                      </h3>
+                      <span className={`text-xs inline-block px-2 py-1 rounded-full 
+                        ${darkMode ? 'bg-surface-700 text-surface-300' : 'bg-surface-200 text-surface-700'}`}>
+                        {doc.fileType || "Document"}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4">
+                    <a
+                      href={getDocumentUrl(doc.fileUrl)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`block w-full text-center py-2 rounded-md transition
+                        ${darkMode 
+                          ? 'bg-primary-600 hover:bg-primary-700 text-white' 
+                          : 'bg-primary-500 hover:bg-primary-600 text-white'}`}
+                    >
+                      View Document
+                    </a>
+                  </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-600">Select a document from the sidebar.</p>
-          )}
-        </main>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+
+      <footer className={`py-8 ${darkMode ? 'bg-surface-900 text-surface-400' : 'bg-white text-surface-600'} border-t ${darkMode ? 'border-surface-800' : 'border-surface-200'}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row justify-between items-center">
+            <p className="text-sm mb-3 sm:mb-0">
+              Developed at <a 
+                href="https://www.apsit.edu.in/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className={`${darkMode ? 'text-primary-400 hover:text-primary-300' : 'text-primary-600 hover:text-primary-500'}`}
+              >
+                A.P. Shah Institute of Technology, Thane, India
+              </a>
+            </p>
+            <p className="text-sm">
+              &copy; {new Date().getFullYear()} DockerLab. All rights reserved.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

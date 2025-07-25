@@ -1,107 +1,208 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
-const os = require('os');
 const fs = require('fs');
 
-/**
- * Helper to get the path to a resource that must be unpacked (e.g. python, scripts) for use by subprocesses
- * Works both in development and in production (ASAR-packed)
- */
-function getUnpackedPath(relPath) {
-  // If running inside app.asar, use app.asar.unpacked for external (non-js) resources
-  if (__dirname.includes('app.asar')) {
-    return path.join(process.resourcesPath, 'app.asar.unpacked', relPath);
-  }
-  return path.join(__dirname, relPath);
-}
+let mainWindow;
+
+// Store theme preference
+let currentTheme = 'light';
 
 function createWindow() {
-  const win = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
-      nodeIntegration: false,
+      nodeIntegration: false
     },
+    icon: path.join(__dirname, 'public', 'vite.svg'),
+    backgroundColor: currentTheme === 'dark' ? '#111827' : '#ffffff',
+    show: false // Don't show until ready
   });
 
-  const indexPath = path.join(__dirname, 'dist', 'index.html');
-  console.log('Trying to load:', indexPath);
-
-  win.loadFile(indexPath);
-  // win.webContents.openDevTools();
-}
-
-// Helper to get the path of the bundled python executable for each OS (UNPACKED)
-function getBundledPythonPath(osType) {
-  if (osType === 'windows') {
-    const winPython = getUnpackedPath('python/python.exe');
-    if (fs.existsSync(winPython)) return winPython;
-  } else if (osType === 'macos') {
-    const macPython = getUnpackedPath('python/bin/python3');
-    if (fs.existsSync(macPython)) return macPython;
-  } else if (osType === 'linux' || osType === 'ubuntu') {
-    const linuxPython = getUnpackedPath('python/bin/python3');
-    if (fs.existsSync(linuxPython)) return linuxPython;
+  // In production, load the built app
+  if (app.isPackaged) {
+    mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'));
+  } else {
+    // In development, load from the dev server
+    mainWindow.loadURL('http://localhost:5173/');
+    mainWindow.webContents.openDevTools();
   }
-  // Fallback to system python
-  return (osType === 'windows') ? 'python' : 'python3';
+
+  // Apply native look to window
+  if (process.platform === 'darwin') {
+    mainWindow.setVibrancy(currentTheme === 'dark' ? 'ultra-dark' : 'light');
+  }
+
+  // Prevent white flash when loading
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
+  });
+
+  // Open external links in browser
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url);
+    return { action: 'deny' };
+  });
 }
 
-function mapOsType(osString) {
-  const osLow = osString.toLowerCase();
-  if (osLow.startsWith('win')) return 'windows';
-  if (osLow.startsWith('mac')) return 'macos';
-  if (osLow.startsWith('linux') || osLow.startsWith('ubuntu')) return 'linux';
-  return osLow;
-}
+app.whenReady().then(() => {
+  createWindow();
 
-app.whenReady().then(createWindow);
+  // Re-create window on macOS when dock icon clicked
+  app.on('activate', function () {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
 
-ipcMain.handle('run-docker-command', async (_, { os: osRaw, cmd }) => {
-  const osType = mapOsType(osRaw);
-  const scriptPath = getUnpackedPath('scripts/run_command.py');
-  const pythonExec = getBundledPythonPath(osType);
-
-  // Log paths for debugging
-  console.log('🟢 Received Docker command:', osType, cmd);
-  console.log('[PROD] Python Exec:', pythonExec);
-  console.log('[PROD] Script Path:', scriptPath);
-
-  // Ensure both are executable (especially after .deb install)
+  // Read saved theme from storage
   try {
-    fs.chmodSync(pythonExec, 0o755);
-    fs.chmodSync(scriptPath, 0o755);
-  } catch (e) {
-    console.warn('Could not chmod python or script:', e.message);
+    if (fs.existsSync(path.join(app.getPath('userData'), 'theme.json'))) {
+      const themeData = JSON.parse(fs.readFileSync(
+        path.join(app.getPath('userData'), 'theme.json'), 
+        'utf8'
+      ));
+      currentTheme = themeData.theme || 'light';
+    }
+  } catch (error) {
+    console.error('Failed to read theme from storage:', error);
   }
+});
 
-  const encodedCmd = JSON.stringify(cmd);
+// Handle Docker command execution - UPDATED to use Python script
+ipcMain.handle('run-docker-command', async (event, osType, command) => {
+  return new Promise((resolve, reject) => {
+    
+    // Path to the Python script
+    const scriptPath = path.join(
+      app.isPackaged ? process.resourcesPath : __dirname,
+      'scripts',
+      'run_command.py'
+    );
 
-  // Add extra environment variables if needed
-  const env = {
-    ...process.env,
-    PATH: process.env.PATH,
-    HOME: process.env.HOME
-  };
+    // Check if Python script exists
+    if (!fs.existsSync(scriptPath)) {
+      const error = `❌ Python script not found at: ${scriptPath}`;
+      console.error(error);
+      reject(new Error(error));
+      return;
+    }
 
-  // Actually spawn the Python process
-  let pythonProcess = spawn(pythonExec, [scriptPath, osType, encodedCmd], {
-    detached: true,
-    env,
+    // Detect Python command (try python3 first, then python)
+    const pythonCommands = ['python3', 'python'];
+    let pythonCmd = 'python3';
+
+    // Try to find available Python command
+    const testPython = (cmd) => {
+      return new Promise((resolve) => {
+        const testProcess = spawn(cmd, ['--version'], { stdio: 'ignore' });
+        testProcess.on('close', (code) => {
+          resolve(code === 0);
+        });
+        testProcess.on('error', () => {
+          resolve(false);
+        });
+      });
+    };
+
+    // Find working Python command and execute
+    (async () => {
+      for (const cmd of pythonCommands) {
+        if (await testPython(cmd)) {
+          pythonCmd = cmd;
+          break;
+        }
+      }
+
+
+      // Launch the Python script with detached process
+      const process = spawn(pythonCmd, [scriptPath, osType, command], {
+        detached: true,  // Allow process to run independently
+        stdio: ['ignore', 'pipe', 'pipe']  // Capture stdout/stderr for logging
+      });
+
+      let stdout = '';
+      let stderr = '';
+
+      // Capture output for debugging
+      process.stdout.on('data', (data) => {
+        stdout += data.toString();
+        console.log(`Python stdout: ${data.toString().trim()}`);
+      });
+
+      process.stderr.on('data', (data) => {
+        stderr += data.toString();
+        console.error(`Python stderr: ${data.toString().trim()}`);
+      });
+
+      // Handle process completion
+      process.on('close', (code) => {
+        if (code === 0) {
+          resolve({ 
+            success: true, 
+            message: 'Terminal launched successfully',
+            stdout: stdout.trim(),
+            stderr: stderr.trim() 
+          });
+        } else {
+          const error = `❌ Python script exited with code ${code}. stderr: ${stderr}`;
+          console.error(error);
+          reject(new Error(error));
+        }
+      });
+
+      // Handle process errors
+      process.on('error', (error) => {
+        const errorMsg = `❌ Failed to launch Python script: ${error.message}`;
+        console.error(errorMsg);
+        reject(new Error(errorMsg));
+      });
+
+      // Don't wait for the process since it launches a terminal
+      process.unref();
+
+      // Give it a moment to start, then resolve
+      setTimeout(() => {
+        if (!process.killed) {
+        }
+      }, 1000);
+
+    })().catch((error) => {
+      console.error('❌ Error in Python detection:', error);
+      reject(error);
+    });
   });
+});
 
-  pythonProcess.stdout.on('data', (data) => {
-    console.log(`[PYTHON STDOUT]: ${data}`);
-  });
+// Handle theme changes
+ipcMain.on('set-theme', (event, theme) => {
+  currentTheme = theme;
+  
+  // Save theme preference
+  try {
+    fs.writeFileSync(
+      path.join(app.getPath('userData'), 'theme.json'),
+      JSON.stringify({ theme })
+    );
+  } catch (error) {
+    console.error('Failed to save theme preference:', error);
+  }
+  
+  // Update window background
+  if (mainWindow) {
+    mainWindow.setBackgroundColor(theme === 'dark' ? '#111827' : '#ffffff');
+    
+    // Update vibrancy on macOS
+    if (process.platform === 'darwin') {
+      mainWindow.setVibrancy(theme === 'dark' ? 'ultra-dark' : 'light');
+    }
+  }
+});
 
-  pythonProcess.stderr.on('data', (data) => {
-    console.error(`[PYTHON STDERR]: ${data}`);
-  });
+// Get current theme
+ipcMain.handle('get-theme', () => currentTheme);
 
-  pythonProcess.on('close', (code) => {
-    console.log(`[PYTHON CLOSE]: child process exited with code ${code}`);
-  });
+app.on('window-all-closed', function () {
+  if (process.platform !== 'darwin') app.quit();
 });
