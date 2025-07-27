@@ -41,7 +41,7 @@ const About = () => {
     {
       name: "Dr. Kiran Deshpande",
       role: "Guide - HOD IT Department APSIT",
-      image: "/HOD.jpeg", // LinkedIn profile picture
+      image: "./HOD.jpeg", // LinkedIn profile picture
       socials: [
         { type: "linkedin", url: "https://www.linkedin.com/in/dr-kiran-deshpande-b2702045", icon: <Linkedin size={18} /> },
         { type: "instagram", url: "https://www.instagram.com/deshpande.82", icon: <Instagram size={18} /> },
@@ -51,7 +51,7 @@ const About = () => {
     {
       name: "Ms. Charul Singh",
       role: "Co-Guide - Assistant Professor IT Department APSIT",
-      image: "/mam.jpg", // LinkedIn profile picture
+      image: "./mam.jpg", // LinkedIn profile picture
       socials: [
         { type: "linkedin", url: "https://www.linkedin.com/in/charul-singh-8a088b79", icon: <Linkedin size={18} /> },
         { type: "instagram", url: "https://www.instagram.com/charul_singh", icon: <Instagram size={18} /> },
@@ -97,7 +97,7 @@ const About = () => {
           
           {/* Updated reference section */}
           <p className={`${darkMode ? 'text-surface-300' : 'text-surface-700'}`}>
-            For more information refer to <a href="/B7_Black_Book.pdf" target="_blank" rel="noopener noreferrer" className={`font-medium ${darkMode ? 'text-primary-400 hover:text-primary-300' : 'text-primary-600 hover:text-primary-500'}`}>Black-Book</a> and for more updates visit <a href="https://dockerhub.sanskrutimhatre.tech" target="_blank" rel="noopener noreferrer" className={`font-medium ${darkMode ? 'text-primary-400 hover:text-primary-300' : 'text-primary-600 hover:text-primary-500'}`}>dockerhub.sanskrutimhatre.tech</a> or <a href="https://dockerhub.nagarji.in" target="_blank" rel="noopener noreferrer" className={`font-medium ${darkMode ? 'text-primary-400 hover:text-primary-300' : 'text-primary-600 hover:text-primary-500'}`}>dockerhub.nagarji.in</a>.
+            For more information refer to <a href="https://github.com/Ammar2123/DockerLab/blob/main/client/public/B7_Black_Book.pdf" target="_blank" rel="noopener noreferrer" className={`font-medium ${darkMode ? 'text-primary-400 hover:text-primary-300' : 'text-primary-600 hover:text-primary-500'}`}>Black-Book</a> and for more updates visit <a href="https://dockerhub.sanskrutimhatre.tech" target="_blank" rel="noopener noreferrer" className={`font-medium ${darkMode ? 'text-primary-400 hover:text-primary-300' : 'text-primary-600 hover:text-primary-500'}`}>dockerhub.sanskrutimhatre.tech</a> or <a href="https://dockerhub.nagarji.in" target="_blank" rel="noopener noreferrer" className={`font-medium ${darkMode ? 'text-primary-400 hover:text-primary-300' : 'text-primary-600 hover:text-primary-500'}`}>dockerhub.nagarji.in</a>.
           </p>
         </div>
 
@@ -119,9 +119,9 @@ const About = () => {
                     alt={dev.name}
                     className="w-24 h-24 rounded-full object-cover border-2 border-primary-500"
                     onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = "https://via.placeholder.com/150?text=" + dev.name.charAt(0);
-                    }}
+  e.target.onerror = null;
+  e.target.src = "./assets/placeholder.png"; // Local placeholder image
+}}
                   />
                 </div>
                 <div className="flex-grow text-center sm:text-left">
@@ -175,9 +175,9 @@ const About = () => {
                     alt={guide.name}
                     className="w-24 h-24 rounded-full object-cover border-2 border-accent-500"
                     onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = "https://via.placeholder.com/150?text=" + guide.name.charAt(0);
-                    }}
+  e.target.onerror = null;
+  e.target.src = "./assets/placeholder.png"; // Local placeholder image
+}}
                   />
                 </div>
                 <div className="flex-grow text-center sm:text-left">

@@ -1,7 +1,10 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, protocol } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
+
+// Initialize @electron/remote
+require('@electron/remote/main').initialize();
 
 let mainWindow;
 
@@ -17,7 +20,7 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false
     },
-    icon: path.join(__dirname, 'public', 'vite.svg'),
+    icon: path.join(__dirname, 'assets', 'vite.svg'),
     backgroundColor: currentTheme === 'dark' ? '#111827' : '#ffffff',
     show: false // Don't show until ready
   });
@@ -48,7 +51,27 @@ function createWindow() {
   });
 }
 
+function registerProtocols() {
+  // Register protocol for assets
+  protocol.registerFileProtocol('app-asset', (request, callback) => {
+    const url = request.url.replace('app-asset://', '');
+    const assetPath = path.join(
+      app.isPackaged ? path.join(process.resourcesPath, 'assets') : path.join(__dirname, 'public'),
+      url
+    );
+    
+    console.log('Loading asset from:', assetPath);
+    
+    try {
+      return callback(assetPath);
+    } catch (error) {
+      console.error('Failed to load asset:', error);
+    }
+  });
+}
+
 app.whenReady().then(() => {
+  registerProtocols();
   createWindow();
 
   // Re-create window on macOS when dock icon clicked
@@ -80,6 +103,10 @@ ipcMain.handle('run-docker-command', async (event, osType, command) => {
       'scripts',
       'run_command.py'
     );
+
+    console.log("Looking for Python script at:", scriptPath);
+    console.log("App is packaged:", app.isPackaged);
+    console.log("Resources path:", app.isPackaged ? process.resourcesPath : "N/A");
 
     // Check if Python script exists
     if (!fs.existsSync(scriptPath)) {

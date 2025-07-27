@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X, LogOut } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import { useTheme } from "../context/ThemeContext";
-import { useAuth } from "../context/AuthContext"; // Make sure this import exists
+import { useAuth } from "../context/AuthContext";
 
 const Navbar = ({ isAdmin }) => {
   const location = useLocation();
@@ -41,15 +41,29 @@ const Navbar = ({ isAdmin }) => {
 
   // Handle admin logout
   const handleLogout = () => {
+    // First remove local storage items
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     
-    // Use auth context logout if available
-    if (logout) {
-      logout();
-    }
+    // Navigate to home page first - this ensures the navigation happens
+    navigate("/");
     
-    navigate("/login");
+    // Use setTimeout to delay the auth context logout until after navigation
+    setTimeout(() => {
+      // Use auth context logout if available - but after we've already navigated
+      if (logout) {
+        try {
+          // Access the logout function but prevent it from navigating
+          // by temporarily replacing the navigate function
+          const originalNavigate = window.history.pushState;
+          window.history.pushState = () => {};
+          logout();
+          window.history.pushState = originalNavigate;
+        } catch (err) {
+          console.log("Error during logout:", err);
+        }
+      }
+    }, 100);
   };
 
   return (
@@ -68,7 +82,7 @@ const Navbar = ({ isAdmin }) => {
               type="button" // Explicitly set type to prevent form submission
             >
               <img 
-                src="/vite.svg" 
+                src="./vite.svg"
                 alt="DockerLab Logo" 
                 className="h-10 w-10 mr-2"
               />

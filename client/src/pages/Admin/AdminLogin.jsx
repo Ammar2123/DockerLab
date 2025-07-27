@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
 import { useTheme } from "../../context/ThemeContext";
@@ -177,8 +177,8 @@ const AdminLogin = ({ setIsAdmin }) => {
           </form>
           
           <div className="mt-6 text-center">
-            <a 
-              href="/" 
+            <Link 
+              to="/" 
               className={`text-sm ${
                 darkMode 
                   ? 'text-primary-400 hover:text-primary-300' 
@@ -186,7 +186,7 @@ const AdminLogin = ({ setIsAdmin }) => {
               } transition-colors`}
             >
               Return to Homepage
-            </a>
+            </Link>
           </div>
         </div>
       </div>

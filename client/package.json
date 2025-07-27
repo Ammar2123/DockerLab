@@ -12,21 +12,23 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "build": "vite build",
+    "build": "node build-prep.cjs && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "dist": "vite build && electron-builder --linux"
+    "dist": "node build-prep.cjs && vite build && electron-builder --linux"
   },
   "dependencies": {
+    "@electron/remote": "^2.1.3",
     "@rollup/rollup-linux-x64-gnu": "^4.44.1",
-    "axios": "^1.8.4",
+    "axios": "^1.11.0",
     "fastq": "^1.19.1",
     "js-cookie": "^3.0.5",
     "lucide-react": "^0.487.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hot-toast": "^2.4.1",
-    "react-router-dom": "^7.5.0"
+    "react-router-dom": "^7.5.0",
+    "react-toastify": "^11.0.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
@@ -58,10 +60,17 @@
     "files": [
       "dist/**/*",
       "main.cjs",
-      "preload.cjs",
-      "scripts/**/*"
+      "preload.cjs"
     ],
     "extraResources": [
+      {
+        "from": "public",
+        "to": "assets"
+      },
+      {
+        "from": "scripts",
+        "to": "scripts"
+      },
       {
         "from": "python/",
         "to": "python"
@@ -76,7 +85,7 @@
         "AppImage",
         "deb"
       ],
-      "icon": "public/vite.svg",
+      "icon": "./vite.svg",
       "category": "Utility"
     }
   }

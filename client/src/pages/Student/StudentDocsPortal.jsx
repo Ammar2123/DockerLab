@@ -12,7 +12,7 @@ const StudentDocsPortal = () => {
   const [error, setError] = useState(null);
 
   // Get API base URL from your axios configuration or environment
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
   useEffect(() => {
     fetchDocuments();

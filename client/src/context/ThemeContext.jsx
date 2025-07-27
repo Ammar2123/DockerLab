@@ -5,10 +5,11 @@ const ThemeContext = createContext();
 export const useTheme = () => useContext(ThemeContext);
 
 export const ThemeProvider = ({ children }) => {
-  const [darkMode, setDarkMode] = useState(false);
+  // Initialize darkMode to true as default
+  const [darkMode, setDarkMode] = useState(true);
   const [loading, setLoading] = useState(true);
 
-  // Check for saved theme preference or system preference on mount
+  // Check for saved theme preference on mount
   useEffect(() => {
     const initTheme = () => {
       try {
@@ -22,15 +23,17 @@ export const ThemeProvider = ({ children }) => {
           setDarkMode(false);
           document.documentElement.classList.remove('dark');
         } else {
-          // Fall back to system preference if no stored preference
-          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          setDarkMode(prefersDark);
-          if (prefersDark) {
-            document.documentElement.classList.add('dark');
-          }
+          // No stored preference, use dark mode as default
+          setDarkMode(true);
+          document.documentElement.classList.add('dark');
+          // Store this preference
+          localStorage.setItem('theme', 'dark');
         }
       } catch (error) {
         console.error('Failed to initialize theme:', error);
+        // Even on error, ensure dark mode is set
+        setDarkMode(true);
+        document.documentElement.classList.add('dark');
       } finally {
         setLoading(false);
       }
@@ -43,12 +46,9 @@ export const ThemeProvider = ({ children }) => {
     const handleChange = (e) => {
       // Only apply system preference if user hasn't set a preference
       if (!localStorage.getItem('theme')) {
-        setDarkMode(e.matches);
-        if (e.matches) {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
+        setDarkMode(true); // Always default to dark regardless of system
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
       }
     };
 

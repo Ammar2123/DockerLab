@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       throw error;
     }
   },
+
+  getAssetPath: (filename) => `./assets/${filename}`,
   
   // Theme control
   setTheme: (theme) => {
@@ -22,5 +24,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   
   // Identify that we're running in Electron
-  isElectron: true
+  isElectron: true,
+
+  // Fix the document URL format to avoid triple slashes
+  getDocumentUrl: (fileUrl) => {
+    // Remove any leading slashes from fileUrl
+    const cleanPath = fileUrl.replace(/^\/+/, '');
+    return `docproxy://${cleanPath}`;
+  },
+  
 });

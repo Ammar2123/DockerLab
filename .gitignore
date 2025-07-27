@@ -6,3 +6,9 @@ client/node_modules
 server/node_modules
 client/dist
 server/dist
+server/scripts
+server/models
+client/assets
+client/build-prep.cjs
+client/verify-build.sh
+client/src/assets
