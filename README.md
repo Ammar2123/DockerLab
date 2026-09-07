@@ -1,6 +1,8 @@
 # 🚀 Docker-Based Institutional Lab Environment
 
 A containerized framework designed to provide pre-configured lab environments for technical institutions. It simplifies software setup, ensures consistency, and supports hands-on learning for courses like Networking, Cybersecurity, DevOps, and more.
+Docker Lab is a hands-on environment for learning how to **build, manage, and deploy applications using Docker containers and images**.
+
 
 ## 🔧 Features
 - Pre-installed tools for multiple domains
